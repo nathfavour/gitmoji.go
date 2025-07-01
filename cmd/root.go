@@ -57,6 +57,30 @@ var randomCmd = &cobra.Command{
 	},
 }
 
+func normalizeWord(word string) string {
+	// Simple stemming - remove common suffixes
+	word = strings.TrimSuffix(word, "ing")
+	word = strings.TrimSuffix(word, "ed")
+	word = strings.TrimSuffix(word, "er")
+	word = strings.TrimSuffix(word, "ly")
+	word = strings.TrimSuffix(word, "s")
+	return word
+}
+
+func fuzzyMatch(s1, s2 string) bool {
+	// Simple character overlap check (at least 70% common chars)
+	if len(s1) < 2 || len(s2) < 2 {
+		return false
+	}
+	common := 0
+	for _, c := range s1 {
+		if strings.ContainsRune(s2, c) {
+			common++
+		}
+	}
+	return float64(common)/float64(len(s1)) >= 0.7
+}
+
 var suggestionCmd = &cobra.Command{
 	Use:   "suggestion [string]",
 	Short: "Suggest an emoji for the given string",
@@ -66,7 +90,111 @@ var suggestionCmd = &cobra.Command{
 		if len(emojiList) == 0 {
 			return
 		}
-		query := strings.ToLower(args[0])
+		query := strings.ToLower(strings.TrimSpace(args[0]))
+		queryNorm := normalizeWord(query)
+
+		// 1. Exact match on alias, tag, description
+		for _, e := range emojiList {
+			for _, alias := range e.Aliases {
+				if strings.ToLower(alias) == query {
+					os.Stdout.WriteString(e.Emoji + "\n")
+					return
+				}
+			}
+			for _, tag := range e.Tags {
+				if strings.ToLower(tag) == query {
+					os.Stdout.WriteString(e.Emoji + "\n")
+					return
+				}
+			}
+			if strings.ToLower(e.Description) == query {
+				os.Stdout.WriteString(e.Emoji + "\n")
+				return
+			}
+		}
+
+		// 2. Normalized/stemmed exact match
+		for _, e := range emojiList {
+			for _, alias := range e.Aliases {
+				if normalizeWord(strings.ToLower(alias)) == queryNorm {
+					os.Stdout.WriteString(e.Emoji + "\n")
+					return
+				}
+			}
+			for _, tag := range e.Tags {
+				if normalizeWord(strings.ToLower(tag)) == queryNorm {
+					os.Stdout.WriteString(e.Emoji + "\n")
+					return
+				}
+			}
+			if normalizeWord(strings.ToLower(e.Description)) == queryNorm {
+				os.Stdout.WriteString(e.Emoji + "\n")
+				return
+			}
+		}
+
+		// 3. Prefix match on alias, tag, description
+		for _, e := range emojiList {
+			for _, alias := range e.Aliases {
+				if strings.HasPrefix(strings.ToLower(alias), query) {
+					os.Stdout.WriteString(e.Emoji + "\n")
+					return
+				}
+			}
+			for _, tag := range e.Tags {
+				if strings.HasPrefix(strings.ToLower(tag), query) {
+					os.Stdout.WriteString(e.Emoji + "\n")
+					return
+				}
+			}
+			if strings.HasPrefix(strings.ToLower(e.Description), query) {
+				os.Stdout.WriteString(e.Emoji + "\n")
+				return
+			}
+		}
+
+		// 4. Word boundary match (query as whole word)
+		queryWord := " " + query + " "
+		for _, e := range emojiList {
+			if strings.Contains(" "+strings.ToLower(e.Description)+" ", queryWord) {
+				os.Stdout.WriteString(e.Emoji + "\n")
+				return
+			}
+			for _, alias := range e.Aliases {
+				if strings.Contains(" "+strings.ToLower(alias)+" ", queryWord) {
+					os.Stdout.WriteString(e.Emoji + "\n")
+					return
+				}
+			}
+			for _, tag := range e.Tags {
+				if strings.Contains(" "+strings.ToLower(tag)+" ", queryWord) {
+					os.Stdout.WriteString(e.Emoji + "\n")
+					return
+				}
+			}
+		}
+
+		// 5. Fuzzy character match
+		for _, e := range emojiList {
+			for _, alias := range e.Aliases {
+				if fuzzyMatch(query, strings.ToLower(alias)) {
+					os.Stdout.WriteString(e.Emoji + "\n")
+					return
+				}
+			}
+			for _, tag := range e.Tags {
+				if fuzzyMatch(query, strings.ToLower(tag)) {
+					os.Stdout.WriteString(e.Emoji + "\n")
+					return
+				}
+			}
+			if fuzzyMatch(query, strings.ToLower(e.Description)) {
+				os.Stdout.WriteString(e.Emoji + "\n")
+				return
+			}
+		}
+
+		// 6. Substring match on alias, tag, description (as before)
 		for _, e := range emojiList {
 			if strings.Contains(strings.ToLower(e.Description), query) {
 				os.Stdout.WriteString(e.Emoji + "\n")
@@ -85,6 +213,7 @@ var suggestionCmd = &cobra.Command{
 				}
 			}
 		}
+
 		// fallback to random
 		rand.Seed(time.Now().UnixNano())
 		os.Stdout.WriteString(emojiList[rand.Intn(len(emojiList))].Emoji + "\n")

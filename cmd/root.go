@@ -53,7 +53,7 @@ var randomCmd = &cobra.Command{
 			return
 		}
 		rand.Seed(time.Now().UnixNano())
-		os.Stdout.WriteString(emojiList[rand.Intn(len(emojiList))].Emoji)
+		os.Stdout.WriteString(emojiList[rand.Intn(len(emojiList))].Emoji + "\n")
 	},
 }
 
@@ -69,25 +69,25 @@ var suggestionCmd = &cobra.Command{
 		query := strings.ToLower(args[0])
 		for _, e := range emojiList {
 			if strings.Contains(strings.ToLower(e.Description), query) {
-				os.Stdout.WriteString(e.Emoji)
+				os.Stdout.WriteString(e.Emoji + "\n")
 				return
 			}
 			for _, alias := range e.Aliases {
 				if strings.Contains(strings.ToLower(alias), query) {
-					os.Stdout.WriteString(e.Emoji)
+					os.Stdout.WriteString(e.Emoji + "\n")
 					return
 				}
 			}
 			for _, tag := range e.Tags {
 				if strings.Contains(strings.ToLower(tag), query) {
-					os.Stdout.WriteString(e.Emoji)
+					os.Stdout.WriteString(e.Emoji + "\n")
 					return
 				}
 			}
 		}
 		// fallback to random
 		rand.Seed(time.Now().UnixNano())
-		os.Stdout.WriteString(emojiList[rand.Intn(len(emojiList))].Emoji)
+		os.Stdout.WriteString(emojiList[rand.Intn(len(emojiList))].Emoji + "\n")
 	},
 }
 

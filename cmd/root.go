@@ -50,11 +50,10 @@ var randomCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		loadEmojis()
 		if len(emojiList) == 0 {
-			fmt.Print("")
 			return
 		}
 		rand.Seed(time.Now().UnixNano())
-		fmt.Print(emojiList[rand.Intn(len(emojiList))].Emoji)
+		os.Stdout.WriteString(emojiList[rand.Intn(len(emojiList))].Emoji)
 	},
 }
 
@@ -65,31 +64,30 @@ var suggestionCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		loadEmojis()
 		if len(emojiList) == 0 {
-			fmt.Print("")
 			return
 		}
 		query := strings.ToLower(args[0])
 		for _, e := range emojiList {
 			if strings.Contains(strings.ToLower(e.Description), query) {
-				fmt.Print(e.Emoji)
+				os.Stdout.WriteString(e.Emoji)
 				return
 			}
 			for _, alias := range e.Aliases {
 				if strings.Contains(strings.ToLower(alias), query) {
-					fmt.Print(e.Emoji)
+					os.Stdout.WriteString(e.Emoji)
 					return
 				}
 			}
 			for _, tag := range e.Tags {
 				if strings.Contains(strings.ToLower(tag), query) {
-					fmt.Print(e.Emoji)
+					os.Stdout.WriteString(e.Emoji)
 					return
 				}
 			}
 		}
 		// fallback to random
 		rand.Seed(time.Now().UnixNano())
-		fmt.Print(emojiList[rand.Intn(len(emojiList))].Emoji)
+		os.Stdout.WriteString(emojiList[rand.Intn(len(emojiList))].Emoji)
 	},
 }
 
@@ -115,6 +113,9 @@ func Execute() {
 	}
 }
 
+func init() {
+	rootCmd.AddCommand(listCmd)
+}
 func init() {
 	rootCmd.AddCommand(listCmd)
 }

@@ -17,3 +17,7 @@
 8. When a source is used for the first time, its data is downloaded and cached locally within a `sources/default/` directory, unless already present.
 
 9. The application employs multiple strategies to extract and utilize emoji metadata, enabling intelligent matching and suggestions for users.
+
+10. The software provides a `random` operation, which outputs a single random emoji from the list, and nothing else.
+
+11. The software provides a `suggestion` operation, which takes a string input and, using simple and efficient regular expression patterns, outputs a single emoji that most likely fits the input string. Only the emoji is output, and the matching is optimized for real-time usage.
